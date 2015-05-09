@@ -3,6 +3,9 @@ import cv2
 from matplotlib import pyplot as plt
 
 def findMatches(template, image):
+    """
+    Takes grayscale template and image, finds SIFT matches, draws a box around them.
+    """
     sift = cv2.SIFT()
     kp_t, des_t = sift.detectAndCompute(template,None)
     kp_i, des_i = sift.detectAndCompute(image,None)
