@@ -58,14 +58,16 @@ def findObjects(template, image, kp_t, kp_i, matches):
         if obj_points.shape[0] < MIN_MATCHES:
             break
         H, mask = cv2.findHomography(obj_points, scene_points, cv2.RANSAC, ransacReprojThreshold=4)
+
         print H
         n_points = np.count_nonzero(mask)
         if n_points < MIN_MATCHES:
             break
+
         indices = np.where(mask==0)[0]
         obj_points = obj_points[indices]
         scene_points = scene_points[indices]
-        if np.max(np.abs(H[2,:2])) > .001:
+        if np.max(np.abs(H[2,:2])) > 0.001:
             continue
         object = cv2.perspectiveTransform(corners, H).astype(np.int)
         #cv2.polylines(result, object, True, (0,255,0), 4, lineType=cv2.CV_AA)
@@ -76,8 +78,8 @@ def findObjects(template, image, kp_t, kp_i, matches):
         #plt.imshow(result)
         #plt.show()
 
-    plt.imshow(result)
-    plt.show()
+    # plt.imshow(result)
+    # plt.show()
 
     return result
 
