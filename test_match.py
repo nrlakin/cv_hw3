@@ -35,7 +35,7 @@ def findMatches(template, image):
 
     good = []
     for m,n in matches:
-        if m.distance < .5*n.distance:
+        if m.distance < .6*n.distance:
             good.append(m)
 
     return good, kp_t, kp_i
@@ -57,22 +57,24 @@ def findObjects(template, image, kp_t, kp_i, matches):
     while(n_points >= MIN_MATCHES):
         if obj_points.shape[0] < MIN_MATCHES:
             break
-        H, mask = cv2.findHomography(obj_points, scene_points, cv2.RANSAC, ransacReprojThreshold=3)
+        H, mask = cv2.findHomography(obj_points, scene_points, cv2.RANSAC, ransacReprojThreshold=4)
         print H
         n_points = np.count_nonzero(mask)
         if n_points < MIN_MATCHES:
             break
+        indices = np.where(mask==0)[0]
+        obj_points = obj_points[indices]
+        scene_points = scene_points[indices]
+        if np.max(np.abs(H[2,:2])) > .001:
+            continue
         object = cv2.perspectiveTransform(corners, H).astype(np.int)
         #cv2.polylines(result, object, True, (0,255,0), 4, lineType=cv2.CV_AA)
         cv2.line(result, (object[0][0][0],object[0][0][1]),(object[1][0][0],object[1][0][1]), (0,255,0), thickness=4)
         cv2.line(result, (object[1][0][0],object[1][0][1]),(object[2][0][0],object[2][0][1]), (0,255,0), thickness=4)
         cv2.line(result, (object[2][0][0],object[2][0][1]),(object[3][0][0],object[3][0][1]), (0,255,0), thickness=4)
         cv2.line(result, (object[3][0][0],object[3][0][1]),(object[0][0][0],object[0][0][1]), (0,255,0), thickness=4)
-        indices = np.where(mask==0)[0]
-        obj_points = obj_points[indices]
-        scene_points = scene_points[indices]
-        plt.imshow(result)
-        plt.show()
+        #plt.imshow(result)
+        #plt.show()
 
     # plt.imshow(result)
     # plt.show()
@@ -109,6 +111,7 @@ if __name__ == "__main__":
 
     #stub = 'superman/'
     stub = ''
+    #template = cv2.imread(stub + 'template.png',0)
     template = cv2.imread(stub + 'template.jpg',0)
     for i in range(1,10):
         im = cv2.imread(stub + 'image' + str(i) + '.jpg', 0)
