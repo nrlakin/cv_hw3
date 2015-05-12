@@ -71,11 +71,11 @@ def findObjects(template, image, kp_t, kp_i, matches):
         indices = np.where(mask==0)[0]
         obj_points = obj_points[indices]
         scene_points = scene_points[indices]
-        plt.imshow(result)
-        plt.show()
+        # plt.imshow(result)
+        # plt.show()
 
-    # plt.imshow(result)
-    # plt.show()
+    plt.imshow(result)
+    plt.show()
 
     return result
 
