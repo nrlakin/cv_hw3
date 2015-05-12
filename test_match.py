@@ -76,8 +76,8 @@ def findObjects(template, image, kp_t, kp_i, matches):
         #plt.imshow(result)
         #plt.show()
 
-    # plt.imshow(result)
-    # plt.show()
+    plt.imshow(result)
+    plt.show()
 
     return result
 

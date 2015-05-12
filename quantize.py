@@ -80,38 +80,33 @@ if __name__ == '__main__':
 	if template.shape[1] > max_template_width:
 		scale = max_template_width/template.shape[1]
 		template = cv2.resize(template, (0,0), fx=scale, fy=scale)
-	img_bgr = cv2.imread('Superman/image2.jpg')
+	img_bgr = cv2.imread('Superman/image5.jpg')
 	if img_bgr.shape[1] > max_image_width:
 		scale = max_image_width/img_bgr.shape[1]
 		img_bgr = cv2.resize(img_bgr, (0,0), fx=scale, fy=scale)
 
 	# Get color palette
 	template_qnt = saturateImage(template, saturation)
-	blur = cv2.GaussianBlur(template_qnt,(5,5),0)
-	template_qnt = cv2.addWeighted(template_qnt, 1.5, blur, -0.5, 0);
 
 	template_qnt, clusters = calculateQuantizedPalette(template_qnt, cluster_count)
 	template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+	template_qnt_gray = cv2.cvtColor(template_qnt, cv2.COLOR_BGR2GRAY)
 
 	cv2.imshow("image1", np.hstack([template, template_qnt]))
 
-	# Color Quantization
-	(h, w) = img_bgr.shape[:2]
-	img_qnt = saturateImage(img_bgr, saturation)
-	blur = cv2.GaussianBlur(img_qnt,(5,5),0)
-	img_qnt = cv2.addWeighted(img_qnt, 1.5, blur, -0.5, 0);
-	img_qnt = quantizeImage(img_qnt, clusters, cluster_threshold)
+	# # Color Quantization
+	# (h, w) = img_bgr.shape[:2]
+	# img_qnt = saturateImage(img_bgr, saturation)
+	# img_qnt = quantizeImage(img_qnt, clusters, cluster_threshold)
 
 	# cv2.imshow("image2", np.hstack([img_bgr, img_qnt]))
-	# cv2.waitKey(0)
+	# # cv2.waitKey(0)
 
-	img_qnt_gray = cv2.cvtColor(img_qnt, cv2.COLOR_BGR2GRAY)
+	# img_qnt_gray = cv2.cvtColor(img_qnt, cv2.COLOR_BGR2GRAY)
 	img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
 
-	matches1, kp_t1, kp_i1 = tm.findMatches(template_gray, img_qnt_gray)
-	matches2, kp_t2, kp_i2 = tm.findMatches(template_gray, img_gray)
+	matches, kp_t, kp_i = tm.findMatches(template_qnt_gray, img_gray)
 
-	tm.findObjects(template_gray, img_qnt_gray, kp_t1, kp_i1, matches1)
-	tm.findObjects(template_gray, img_gray, kp_t2, kp_i2, matches2)
+	tm.findObjects(template_qnt_gray, img_gray, kp_t, kp_i, matches)
 
 
