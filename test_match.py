@@ -2,6 +2,22 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
+MIN_MATCHES=5
+
+def drawMatches(template, image, kp_t, kp_i, matches):
+    result = np.zeros(shape =(max([template.shape[0],image.shape[0]]), template.shape[1]+image.shape[1],3), dtype=np.uint8)
+    result[:image.shape[0], :image.shape[1],0] = image
+    result[:template.shape[0], image.shape[1]:, 0] = template
+    result[:,:,1]=result[:,:,0]
+    result[:,:,2]=result[:,:,0]
+
+    for m in matches:
+        color = tuple([np.random.randint(0,255) for _ in xrange(3)])
+        cv2.line(result, (int(kp_i[m.queryIdx].pt[0]), int(kp_i[m.queryIdx].pt[1])) , (int(kp_t[m.trainIdx].pt[0] + template.shape[1]), int(kp_t[m.trainIdx].pt[1])), color)
+
+    plt.imshow(result)
+    plt.show()
+
 def findMatches(template, image):
     """
     Takes grayscale template and image, finds SIFT matches, draws a box around them.
@@ -10,37 +26,61 @@ def findMatches(template, image):
     kp_t, des_t = sift.detectAndCompute(template,None)
     kp_i, des_i = sift.detectAndCompute(image,None)
 
+    print "keypoints in image: " + str(len(kp_i))
+    print "keypoints in template: " + str(len(kp_t))
     matcher = cv2.BFMatcher()
-    matches = matcher.knnMatch(des_t, des_i, k=2)
+    # tricky--flip query image and template here
+    matches = matcher.knnMatch(des_i, des_t, k=2)
 
     good = []
     for m,n in matches:
-        if m.distance < .75*n.distance:
+        if m.distance < .6*n.distance:
             good.append(m)
 
-    """
-    result = np.zeros(shape =(max([template.shape[0],image.shape[0]]), template.shape[1]+image.shape[1],3), dtype=np.uint8)
-    result[:template.shape[0], :template.shape[1],0] = template
-    result[:image.shape[0], template.shape[1]:, 0] = image
+    return good, kp_t, kp_i
+
+def findObjects(template, image, kp_t, kp_i, matches):
+    plt.gray()
+
+    n_points = MIN_MATCHES
+    h, w = template.shape
+    result = np.zeros(shape = (image.shape[0],image.shape[1],3),dtype=np.uint8)
+    result[:,:,0]=image
     result[:,:,1]=result[:,:,0]
     result[:,:,2]=result[:,:,0]
 
-    for m in good:
-        color = tuple([np.random.randint(0,255) for _ in xrange(3)])
-        cv2.line(result, (int(kp_t[m.queryIdx].pt[0]), int(kp_t[m.queryIdx].pt[1])) , (int(kp_i[m.trainIdx].pt[0] + template.shape[1]), int(kp_i[m.trainIdx].pt[1])), color)
+    obj_points = np.array([kp_t[m.trainIdx].pt for m in matches])
+    scene_points = np.array([kp_i[m.queryIdx].pt for m in matches])
+    corners = np.float32([[0,0],[0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
 
-    points = []
-    for m in good:
-        points.append(kp_i[m.trainIdx].pt)
+    while(n_points >= MIN_MATCHES):
+        print "Shape: " + str(obj_points.shape)
+        if obj_points.shape[0] < MIN_MATCHES:
+            break
+        H, mask = cv2.findHomography(obj_points, scene_points, cv2.RANSAC, ransacReprojThreshold=5)
+        n_points = np.count_nonzero(mask)
+        if n_points < MIN_MATCHES:
+            break
+        object = cv2.perspectiveTransform(corners, H).astype(np.int)
+        print object.shape
+        #cv2.polylines(result, object, True, (0,255,0), 4, lineType=cv2.CV_AA)
+        cv2.line(result, (object[0][0][0],object[0][0][1]),(object[1][0][0],object[1][0][1]), (0,255,0), thickness=4)
+        cv2.line(result, (object[1][0][0],object[1][0][1]),(object[2][0][0],object[2][0][1]), (0,255,0), thickness=4)
+        cv2.line(result, (object[2][0][0],object[2][0][1]),(object[3][0][0],object[3][0][1]), (0,255,0), thickness=4)
+        cv2.line(result, (object[3][0][0],object[3][0][1]),(object[0][0][0],object[0][0][1]), (0,255,0), thickness=4)
+        indices = np.where(mask==0)[0]
+        obj_points = obj_points[indices]
+        scene_points = scene_points[indices]
 
-    points = np.array(points,dtype='int')
-    min_x=np.min(points[:,0])
-    max_x=np.max(points[:,0])
-    min_y=np.min(points[:,1])
-    max_y=np.max(points[:,1])
-    cv2.rectangle(result,tuple([min_x+template.shape[1],min_y]),tuple([max_x+template.shape[1],max_y]), color)
+    plt.imshow(result)
+    plt.show()
 
-    """
+    return obj_points,scene_points
+
+
+
+
+def drawObject(template, image, good):
     result = np.zeros(shape = (image.shape[0],image.shape[1],3),dtype=np.uint8)
     result[:,:,0]=image
     result[:,:,1]=image
@@ -49,8 +89,9 @@ def findMatches(template, image):
     points = []
     for m in good:
         points.append(kp_i[m.trainIdx].pt)
-
+        #result[kp_i[m.trainIdx].pt[1],kp_i[m.trainIdx].pt[0]]+=1
     points = np.array(points,dtype='int')
+
     min_x=np.min(points[:,0])
     max_x=np.max(points[:,0])
     min_y=np.min(points[:,1])
