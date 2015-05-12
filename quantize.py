@@ -80,33 +80,43 @@ if __name__ == '__main__':
 	max_image_width = 1000.0
 	cluster_threshold = 90
 	cluster_count = 4
+	folder = "Starbucks/"
+	image_count = 17
 
 	# Load images (resize template if necessary)
-	template = loadImage('roadsign/template.jpg', max_template_width)
-	img_bgr = loadImage('roadsign/image11.jpg', max_image_width)
+	template = loadImage(folder+'template.jpg', max_template_width)
 
 	# Get color palette
 	template_qnt = saturateImage(template, saturation)
 	template_qnt, clusters = calculateQuantizedPalette(template_qnt, cluster_count)
-	cv2.imshow("image1", np.hstack([template, template_qnt]))
+	cv2.imshow("image", np.hstack([template, template_qnt]))
 
-	# # Color Quantization
-	# (h, w) = img_bgr.shape[:2]
-	# img_qnt = saturateImage(img_bgr, saturation)
-	# img_qnt = cv2.bilateralFilter(img_qnt,5,50,50)
+	hsv = cv2.cvtColor(template_qnt,cv2.COLOR_BGR2HSV)
+	M = cv2.calcHist([hsv],[0, 1], None, [180, 256], [0, 180, 0, 256] )
 
-	# img_qnt = quantizeImage(img_qnt, clusters, cluster_threshold)
+	# calculating object histogram
+	roihist = cv2.calcHist([hsv],[0, 1], None, [180, 256], [0, 180, 0, 256] )
 
-	# cv2.imshow("image2", np.hstack([img_bgr, img_qnt]))
-	# # cv2.waitKey(0)
+	# Iterate through images
+	for x in range(1, image_count):
+		img_bgr = loadImage(folder+'image'+str(x)+'.jpg', max_image_width)
 
-	# template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-	template_qnt_gray = cv2.cvtColor(template_qnt, cv2.COLOR_BGR2GRAY)
-	# img_qnt_gray = cv2.cvtColor(img_qnt, cv2.COLOR_BGR2GRAY)
-	img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+		# (h, w) = img_bgr.shape[:2]
+		# img_qnt = saturateImage(img_bgr, saturation)
+		# img_qnt = cv2.bilateralFilter(img_qnt,5,50,50)
 
-	matches, kp_t, kp_i = tm.findMatches(template_qnt_gray, img_gray)
+		# img_qnt = quantizeImage(img_qnt, clusters, cluster_threshold)
 
-	tm.findObjects(template_qnt_gray, img_gray, kp_t, kp_i, matches)
+		# cv2.imshow("image2", np.hstack([img_bgr, img_qnt]))
+		# # cv2.waitKey(0)
+
+		template_qnt_gray = cv2.cvtColor(template_qnt, cv2.COLOR_BGR2GRAY)
+		img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+
+		matches, kp_t, kp_i = tm.findMatches(template_qnt_gray, img_gray)
+
+		cv2.imwrite(folder+'image'+str(x)+'_a2.jpg', tm.findObjects(template_qnt_gray, img_gray, kp_t, kp_i, matches))
+
+
 
 
